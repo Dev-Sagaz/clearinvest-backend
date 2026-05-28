@@ -17,7 +17,11 @@ public class BrapiClient {
     private final RestTemplate restTemplate = new RestTemplate();
 
     public String getQuote(String ticker) {
-        String url = brapiUrl + "/quote/" + ticker + "?token=" + token;
+        String url = brapiUrl
+                + "/quote/" + ticker.toUpperCase()
+                + "?token=" + token
+                + "&fundamental=true"
+                + "&modules=summaryProfile,defaultKeyStatistics,financialData";
         return restTemplate.getForObject(url, String.class);
     }
 }
