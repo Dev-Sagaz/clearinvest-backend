@@ -26,7 +26,7 @@ import java.util.Map;
                 for (Element row : rows) {
                     Elements cells = row.select("td");
                     for (int i = 0; i + 1 < cells.size(); i += 2) {
-                        String label = cells.get(i).text().trim();
+                        String label = cells.get(i).text().trim().replace("?", "") ;
                         String value = cells.get(i + 1).text().trim()
                                 .replace(".", "")
                                 .replace(",", ".")
