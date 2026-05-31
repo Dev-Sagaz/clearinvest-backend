@@ -8,7 +8,7 @@ import org.springframework.web.client.RestTemplate;
 @Component
 public class FmpClient {
 
-    @Value("${fmp.token}")
+    @Value("${fmp.key}")
     private String token;
 
     @Value("${fmp.url}")
