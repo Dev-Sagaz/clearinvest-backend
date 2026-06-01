@@ -30,8 +30,10 @@ public class AnalysisController {
     }
 
     @GetMapping("/analysis/{ticker}")
-    public StockAnalysis analyze(@PathVariable String ticker) {
-        return analysisService.analyze(ticker);
+    public StockAnalysis analyze(
+            @PathVariable String ticker,
+            @RequestParam(required = false, defaultValue = "default") String mode) {
+        return analysisService.analyze(ticker, mode);
     }
 
     @GetMapping("/debug/{ticker}")

@@ -4,43 +4,52 @@ import lombok.Data;
 
 @Data
 public class StockAnalysis {
-    // Dados básicos
+
+    // Identificação
     private String ticker;
     private String companyName;
     private String market;
+    private String mode; // "default", "barsi", "buffett"
+
+    // Preço e valuation
     private double currentPrice;
     private double fairPrice;
     private double upsidePercent;
+
+    // Recomendação
     private int score;
     private String recommendation;
 
-    // Indicadores de mercado
+    // Múltiplos
     private double peRatio;
     private double pbRatio;
     private double dividendYield;
+    private double psr;
 
-    // DRE (Demonstração de Resultado)
+    // DRE
     private double revenue;
     private double grossProfit;
     private double operatingIncome;
     private double netIncome;
-    private double netMargin;
-    private double grossMargin;
     private double ebitda;
+    private double grossMargin;
+    private double ebitMargin;
+    private double netMargin;
+    private double revenueGrowth5y;
 
-    // Balanço Patrimonial
+    // Balanço
     private double totalAssets;
     private double totalLiabilities;
     private double totalEquity;
-    private double currentRatio;
     private double debtToEquity;
+    private double currentRatio;
 
-    // DFC (Demonstração de Fluxo de Caixa)
+    // DFC
     private double operatingCashFlow;
     private double freeCashFlow;
     private double capitalExpenditure;
 
-    // Indicadores de rentabilidade
+    // Rentabilidade
     private double roe;
     private double roic;
     private double debtToEbitda;
