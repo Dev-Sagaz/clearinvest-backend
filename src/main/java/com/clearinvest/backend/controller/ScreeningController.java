@@ -12,7 +12,6 @@ public class ScreeningController {
 
     private final FundamentusClient fundamentusClient;
 
-    // 50 principais ações B3 por liquidez
     private static final List<String> B3_TICKERS = List.of(
             "PETR4", "VALE3", "ITUB4", "BBDC4", "WEGE3",
             "ABEV3", "BBAS3", "RENT3", "SUZB3", "RDOR3",
@@ -20,10 +19,10 @@ public class ScreeningController {
             "VIVT3", "TIMS3", "CPLE6", "SBSP3", "SAPR11",
             "ITSA4", "BRAP4", "CSNA3", "GGBR4", "USIM5",
             "KLBN11", "DXCO3", "MRFG3", "BEEF3", "JBSS3",
-            "LREN3", "MGLU3", "VVAR3", "AMER3", "SOMA3",
-            "HAPV3", "GNDI3", "RDRD3", "FLRY3", "DASA3",
-            "CSAN3", "PRIO3", "UGPA3", "BRDT3", "RRRP3",
-            "BPAC11", "SANB11", "BRSR6", "TASA4", "CYRE3"
+            "LREN3", "MGLU3", "SOMA3", "HAPV3", "FLRY3",
+            "CSAN3", "PRIO3", "UGPA3", "BPAC11", "SANB11",
+            "BRSR6", "CYRE3", "ELET3", "CPFE3", "EQTL3",
+            "MULT3", "TEND3", "DIRR3", "EVEN3", "JHSF3"
     );
 
     public ScreeningController(FundamentusClient fundamentusClient) {
@@ -42,21 +41,27 @@ public class ScreeningController {
                 Map<String, Double> fund = fundamentusClient.getIndicators(ticker);
                 if (fund.isEmpty()) continue;
 
-                double pe   = fund.getOrDefault("P/L", 0.0);
-                double pb   = fund.getOrDefault("P/VP", 0.0);
-                double dy   = fund.getOrDefault("Div. Yield", 0.0);
-                double roe  = fund.getOrDefault("ROE", 0.0);
-                double roic = fund.getOrDefault("ROIC", 0.0);
-                double netMargin   = fund.getOrDefault("Marg. Líquida", 0.0);
-                double currentRatio = fund.getOrDefault("Liquidez Corr", 0.0);
-                double debtToEquity = fund.getOrDefault("Dív Líq / Patrim", 0.0);
+                double pe            = fund.getOrDefault("P/L", 0.0);
+                double pb            = fund.getOrDefault("P/VP", 0.0);
+                double dy            = fund.getOrDefault("Div. Yield", 0.0);
+                double roe           = fund.getOrDefault("ROE", 0.0);
+                double roic          = fund.getOrDefault("ROIC", 0.0);
+                double netMargin     = fund.getOrDefault("Marg. Líquida", 0.0);
+                double grossMargin   = fund.getOrDefault("Marg. Bruta", 0.0);
+                double currentRatio  = fund.getOrDefault("Liquidez Corr", 0.0);
+                double debtToEquity  = fund.getOrDefault("Dív Líq / Patrim", 0.0);
+                double debtToEbitda  = fund.getOrDefault("EV / EBITDA", 0.0);
                 double revenueGrowth = fund.getOrDefault("Cres. Rec (5a)", 0.0);
-                double price = fund.getOrDefault("Cotação", 0.0);
+                double ebitOnAssets  = fund.getOrDefault("EBIT / Ativo", 0.0);
+                double price         = fund.getOrDefault("Cotação", 0.0);
 
                 boolean passes = switch (mode.toLowerCase()) {
-                    case "barsi" -> passesBarsi(dy, pb, pe, roe, currentRatio, debtToEquity, netMargin);
-                    case "buffett" -> passesBuffett(roe, roic, netMargin, debtToEquity, pe, revenueGrowth);
-                    default -> passesDefault(pe, pb, dy, roe);
+                    case "barsi"       -> passesBarsi(dy, pb, pe, roe, currentRatio, debtToEquity, netMargin);
+                    case "buffett"     -> passesBuffett(roe, roic, netMargin, debtToEquity, pe, revenueGrowth);
+                    case "lynch"       -> passesLynch(pe, revenueGrowth, netMargin, roic);
+                    case "graham"      -> passesGraham(pe, pb, currentRatio, debtToEquity, dy);
+                    case "clearinvest" -> passesClearInvest(pe, pb, dy, roe, roic, netMargin, debtToEquity, currentRatio, revenueGrowth);
+                    default            -> passesDefault(pe, pb, dy, roe);
                 };
 
                 if (passes) {
@@ -71,6 +76,7 @@ public class ScreeningController {
                     stock.put("netMargin", round2(netMargin));
                     stock.put("currentRatio", round2(currentRatio));
                     stock.put("debtToEquity", round2(debtToEquity));
+                    stock.put("revenueGrowth", round2(revenueGrowth));
                     stock.put("mode", mode);
                     results.add(stock);
                 }
@@ -82,43 +88,59 @@ public class ScreeningController {
             }
         }
 
-        // Ordena por DY (Barsi) ou ROE (Buffett/default)
+        String sortField = switch (mode.toLowerCase()) {
+            case "barsi"       -> "dividendYield";
+            case "buffett"     -> "roe";
+            case "lynch"       -> "revenueGrowth";
+            case "graham"      -> "pbRatio";
+            case "clearinvest" -> "roe";
+            default            -> "dividendYield";
+        };
+
         results.sort((a, b) -> {
-            String sortField = mode.equalsIgnoreCase("barsi") ? "dividendYield" : "roe";
             double va = (double) a.getOrDefault(sortField, 0.0);
             double vb = (double) b.getOrDefault(sortField, 0.0);
-            return Double.compare(vb, va);
+            return mode.equalsIgnoreCase("graham")
+                    ? Double.compare(va, vb)
+                    : Double.compare(vb, va);
         });
 
         return results;
     }
 
-    // ── Critérios Barsi ──────────────────────────────────────────────────────
     private boolean passesBarsi(double dy, double pb, double pe, double roe,
                                 double currentRatio, double debtToEquity, double netMargin) {
-        return dy >= 5          // DY mínimo 5%
-                && pb > 0 && pb <= 3  // P/VP razoável
-                && pe > 0 && pe <= 20 // P/L razoável
-                && roe >= 8           // ROE mínimo 8%
-                && netMargin > 0;     // Empresa lucrativa
+        return dy >= 5 && pb > 0 && pb <= 3 && pe > 0 && pe <= 20 && roe >= 8 && netMargin > 0;
     }
 
-    // ── Critérios Buffett ────────────────────────────────────────────────────
     private boolean passesBuffett(double roe, double roic, double netMargin,
                                   double debtToEquity, double pe, double revenueGrowth) {
-        return roe >= 15          // ROE mínimo 15%
-                && netMargin >= 10    // Margem líquida mínima 10%
-                && debtToEquity < 1.0 // Dívida controlada
-                && pe > 0 && pe <= 30 // Não muito caro
-                && roic >= 10;        // ROIC mínimo 10%
+        return roe >= 15 && netMargin >= 10 && debtToEquity < 1.0 && pe > 0 && pe <= 30 && roic >= 10;
     }
 
-    // ── Critérios padrão ─────────────────────────────────────────────────────
+    private boolean passesLynch(double pe, double revenueGrowth, double netMargin, double roic) {
+        return revenueGrowth >= 5 && pe > 0 && netMargin >= 5 && roic >= 8;
+    }
+
+    private boolean passesGraham(double pe, double pb, double currentRatio,
+                                 double debtToEquity, double dy) {
+        return pe > 0 && pe < 15 && pb > 0 && pb < 1.5 && currentRatio >= 1.5 && debtToEquity < 0.5 && dy >= 2;
+    }
+
+    private boolean passesClearInvest(double pe, double pb, double dy, double roe,
+                                      double roic, double netMargin, double debtToEquity,
+                                      double currentRatio, double revenueGrowth) {
+        int pilares = 0;
+        if (roe >= 10 && roic >= 8 && netMargin > 0) pilares++;
+        if (dy >= 4 && pe > 0 && pe < 18)            pilares++;
+        if (pb > 0 && pb < 2)                         pilares++;
+        if (revenueGrowth >= 5)                       pilares++;
+        if (currentRatio >= 1 && debtToEquity < 1.0) pilares++;
+        return pilares >= 3;
+    }
+
     private boolean passesDefault(double pe, double pb, double dy, double roe) {
-        return pe > 0 && pe <= 15
-                && pb > 0 && pb <= 2
-                && dy >= 3
-                && roe >= 10;
+        return pe > 0 && pe <= 15 && pb > 0 && pb <= 2 && dy >= 3 && roe >= 10;
     }
 
     private double round2(double v) { return Math.round(v * 100.0) / 100.0; }
