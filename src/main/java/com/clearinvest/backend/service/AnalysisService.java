@@ -70,7 +70,7 @@ public class AnalysisService {
 // Preço justo específico por modo
         double fairPrice = switch (mode.toLowerCase()) {
             case "graham" -> grahamPrice > 0 ? grahamPrice : avg52w;
-            case "buffett" -> eps > 0 ? round2(eps * 15) : avg52w; // P/L justo = 15x
+            case "buffett" -> eps > 0 ? round2(eps * (peRatio < 10 ? 12 : 15)) : avg52w;
             case "lynch" -> (eps > 0 && revenueGrowth > 0)
                     ? round2(eps * revenueGrowth) : avg52w; // PEG = 1
             case "clearinvest" -> grahamPrice > 0 && avg52w > 0
