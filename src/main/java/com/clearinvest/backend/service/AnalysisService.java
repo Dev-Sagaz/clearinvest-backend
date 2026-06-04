@@ -235,58 +235,87 @@ public class AnalysisService {
                                           double upside, double grossMargin) {
         int score = 0;
         int pilares = 0;
+
+        // Pilar 1 — Empresa lucrativa e consistente (0-25 pts) — PESO MÁXIMO
         int pilar1 = 0;
-        if (roe >= 12)      pilar1 += 8;
+        if      (roe >= 20) pilar1 += 12;
+        else if (roe >= 12) pilar1 += 8;
         else if (roe >= 8)  pilar1 += 4;
-        if (roic >= 10)     pilar1 += 7;
-        else if (roic >= 6) pilar1 += 3;
-        if (netMargin > 0)  pilar1 += 5;
+        else                pilar1 -= 5;
+        if      (roic >= 15) pilar1 += 8;
+        else if (roic >= 10) pilar1 += 5;
+        else if (roic >= 6)  pilar1 += 2;
+        if (netMargin >= 10) pilar1 += 5;
+        else if (netMargin > 0) pilar1 += 2;
+        else pilar1 -= 5;
         score += pilar1;
-        if (pilar1 >= 12) pilares++;
+        if (pilar1 >= 15) pilares++;
+
+        // Pilar 2 — Paga dividendos consistentes (0-25 pts) — PESO MÁXIMO
         int pilar2 = 0;
-        if      (dy >= 6) pilar2 += 15;
-        else if (dy >= 4) pilar2 += 10;
-        else if (dy >= 2) pilar2 += 5;
-        if (pe > 0 && pe < 15) pilar2 += 5;
+        if      (dy >= 8) pilar2 += 15;
+        else if (dy >= 6) pilar2 += 12;
+        else if (dy >= 4) pilar2 += 7;
+        else if (dy >= 2) pilar2 += 3;
+        else              pilar2 -= 8;
+        if      (pe > 0 && pe < 10) pilar2 += 10;
+        else if (pe >= 10 && pe < 15) pilar2 += 6;
+        else if (pe >= 15 && pe < 20) pilar2 += 2;
+        else if (pe >= 20)            pilar2 -= 5;
         score += pilar2;
-        if (pilar2 >= 12) pilares++;
+        if (pilar2 >= 15) pilares++;
+
+        // Pilar 3 — Preço com margem de segurança (0-15 pts)
         int pilar3 = 0;
-        if      (upside >= 20) pilar3 += 12;
-        else if (upside >= 10) pilar3 += 7;
-        else if (upside >= 0)  pilar3 += 3;
+        if      (upside >= 20) pilar3 += 10;
+        else if (upside >= 10) pilar3 += 6;
+        else if (upside >= 0)  pilar3 += 2;
         else                   pilar3 -= 5;
-        if      (pb > 0 && pb < 1.5)  pilar3 += 8;
-        else if (pb >= 1.5 && pb < 2)  pilar3 += 4;
+        if      (pb > 0 && pb < 1)   pilar3 += 5;
+        else if (pb >= 1 && pb < 1.5) pilar3 += 3;
+        else if (pb >= 1.5 && pb < 2) pilar3 += 1;
+        else if (pb >= 2)             pilar3 -= 3;
         score += pilar3;
-        if (pilar3 >= 12) pilares++;
+        if (pilar3 >= 10) pilares++;
+
+        // Pilar 4 — Crescimento real (0-15 pts)
         int pilar4 = 0;
         if      (revenueGrowth >= 10) pilar4 += 10;
         else if (revenueGrowth >= 5)  pilar4 += 6;
         else if (revenueGrowth >= 0)  pilar4 += 2;
         else                          pilar4 -= 5;
-        if (grossMargin >= 30) pilar4 += 5;
+        if (grossMargin >= 40) pilar4 += 5;
+        else if (grossMargin >= 25) pilar4 += 3;
         score += pilar4;
         if (pilar4 >= 8) pilares++;
+
+        // Pilar 5 — Saúde financeira (0-12 pts)
         int pilar5 = 0;
-        if      (debtToEbitda > 0 && debtToEbitda < 2) pilar5 += 8;
-        else if (debtToEbitda >= 2 && debtToEbitda < 3) pilar5 += 4;
-        else if (debtToEbitda >= 3)                      pilar5 -= 5;
+        if      (debtToEbitda > 0 && debtToEbitda < 2) pilar5 += 5;
+        else if (debtToEbitda >= 2 && debtToEbitda < 3) pilar5 += 2;
+        else if (debtToEbitda >= 3)                      pilar5 -= 4;
         if      (currentRatio >= 1.5) pilar5 += 4;
         else if (currentRatio >= 1)   pilar5 += 2;
         else                          pilar5 -= 3;
         if      (debtToEquity < 0.5) pilar5 += 3;
         else if (debtToEquity > 1.5) pilar5 -= 3;
         score += pilar5;
-        if (pilar5 >= 10) pilares++;
+        if (pilar5 >= 8) pilares++;
+
+        // Pilar 6 — Vantagem competitiva (0-8 pts)
         int pilar6 = 0;
-        if (grossMargin >= 40) pilar6 += 5;
-        else if (grossMargin >= 25) pilar6 += 3;
-        if (roic >= 15) pilar6 += 5;
-        else if (roic >= 10) pilar6 += 3;
+        if (grossMargin >= 40) pilar6 += 4;
+        else if (grossMargin >= 25) pilar6 += 2;
+        if (roic >= 15) pilar6 += 4;
+        else if (roic >= 10) pilar6 += 2;
         score += pilar6;
-        if (pilar6 >= 7) pilares++;
-        if      (pilares >= 5) score += 10;
-        else if (pilares >= 4) score += 5;
+        if (pilar6 >= 6) pilares++;
+
+        // Bônus por pilares completos
+        if      (pilares >= 5) score += 15;
+        else if (pilares >= 4) score += 8;
+        else if (pilares >= 3) score += 3;
+
         return Math.min(100, Math.max(0, score));
     }
 
