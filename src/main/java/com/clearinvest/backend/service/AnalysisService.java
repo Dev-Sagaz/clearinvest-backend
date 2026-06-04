@@ -61,11 +61,23 @@ public class AnalysisService {
         double bookValue     = fund.getOrDefault("VPA",               0.0);
         double eps           = fund.getOrDefault("LPA",               0.0);
 
+        double avg52w = (fiftyTwoWeekHigh > 0 && fiftyTwoWeekLow > 0)
+                ? round2((fiftyTwoWeekHigh + fiftyTwoWeekLow) / 2.0) : 0;
+
         double grahamPrice = (eps > 0 && bookValue > 0)
                 ? round2(Math.sqrt(22.5 * eps * bookValue)) : 0;
-        double fairPrice = grahamPrice > 0 ? grahamPrice
-                : (fiftyTwoWeekHigh > 0 && fiftyTwoWeekLow > 0)
-                ? round2((fiftyTwoWeekHigh + fiftyTwoWeekLow) / 2.0) : 0;
+
+// Preço justo específico por modo
+        double fairPrice = switch (mode.toLowerCase()) {
+            case "graham" -> grahamPrice > 0 ? grahamPrice : avg52w;
+            case "buffett" -> eps > 0 ? round2(eps * 15) : avg52w; // P/L justo = 15x
+            case "lynch" -> (eps > 0 && revenueGrowth > 0)
+                    ? round2(eps * revenueGrowth) : avg52w; // PEG = 1
+            case "clearinvest" -> grahamPrice > 0 && avg52w > 0
+                    ? round2((grahamPrice + avg52w) / 2.0) : avg52w; // média Graham + 52w
+            default -> avg52w; // Barsi, Padrão
+        };
+
         double upside = fairPrice > 0
                 ? round1(((fairPrice - currentPrice) / currentPrice) * 100) : 0;
 
