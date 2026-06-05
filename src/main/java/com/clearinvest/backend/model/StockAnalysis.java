@@ -54,4 +54,17 @@ public class StockAnalysis {
     private double roic;
     private double debtToEbitda;
     private double profitGrowth3y;
+
+    // Indicadores adicionais
+    private double evEbit;
+    private double pEbit;
+    private double pAtivos;
+    private double giroAtivos;
+    private double pCapGiro;
+    private double ebitAtivo;
+    private double min52w;
+    private double max52w;
+    private double volumeMedio;
+    private double valorMercado;
+    private double valorFirma;
 }

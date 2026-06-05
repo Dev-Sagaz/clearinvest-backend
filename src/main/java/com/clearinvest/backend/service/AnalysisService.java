@@ -126,6 +126,18 @@ public class AnalysisService {
         analysis.setRoe(round2(roe));
         analysis.setRoic(round2(roic));
         analysis.setDebtToEbitda(round2(debtToEbitda));
+        // Indicadores adicionais
+        analysis.setEvEbit(round2(fund.getOrDefault("EV / EBIT", 0.0)));
+        analysis.setPEbit(round2(fund.getOrDefault("P/EBIT", 0.0)));
+        analysis.setPAtivos(round2(fund.getOrDefault("P/Ativos", 0.0)));
+        analysis.setGiroAtivos(round2(fund.getOrDefault("Giro Ativos", 0.0)));
+        analysis.setPCapGiro(round2(fund.getOrDefault("P/Cap. Giro", 0.0)));
+        analysis.setEbitAtivo(round2(fund.getOrDefault("EBIT / Ativo", 0.0)));
+        analysis.setMin52w(fiftyTwoWeekLow);
+        analysis.setMax52w(fiftyTwoWeekHigh);
+        analysis.setVolumeMedio(quote.optDouble("regularMarketVolume", 0));
+        analysis.setValorMercado(fund.getOrDefault("Valor de mercado", 0.0));
+        analysis.setValorFirma(fund.getOrDefault("Valor da firma", 0.0));
         return analysis;
     }
 
