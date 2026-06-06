@@ -9,7 +9,7 @@ public class StockAnalysis {
     private String ticker;
     private String companyName;
     private String market;
-    private String mode; // "default", "barsi", "buffett"
+    private String mode;
 
     // Preço e valuation
     private double currentPrice;
@@ -67,4 +67,7 @@ public class StockAnalysis {
     private double volumeMedio;
     private double valorMercado;
     private double valorFirma;
+
+    // Valuation Robusto
+    private ValuationResult valuationRobusto;
 }
