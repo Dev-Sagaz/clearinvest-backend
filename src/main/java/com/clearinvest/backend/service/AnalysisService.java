@@ -147,8 +147,11 @@ public class AnalysisService {
         analysis.setValorFirma(fund.getOrDefault("Valor da firma", 0.0));
         analysis.setLpa(round2(eps));
         analysis.setVpa(round2(bookValue));
-        analysis.setRoa(round2(fund.getOrDefault("ROA", 0.0)));
-        analysis.setMargemEbitda(round2(fund.getOrDefault("Marg. EBITDA", 0.0)));
+        double roa = totalAssets > 0 ? round2((netIncome / totalAssets) * 100) : 0.0;
+        double margemEbitda = revenue > 0 ? round2((ebitda / revenue) * 100) : 0.0;
+
+        analysis.setRoa(roa);
+        analysis.setMargemEbitda(margemEbitda);
         //setValuation
         analysis.setValuationRobusto(calcularValuationRobusto(
                 currentPrice, eps, bookValue, dividendYield,
