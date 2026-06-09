@@ -71,7 +71,10 @@ public class StockAnalysis {
     private double volumeMedio;
     private double valorMercado;
     private double valorFirma;
-
+    private double lpa;
+    private double vpa;
+    private double roa;
+    private double margemEbitda;
     // Valuation Robusto
     private ValuationResult valuationRobusto;
 }

@@ -145,7 +145,11 @@ public class AnalysisService {
         analysis.setVolumeMedio(quote.optDouble("regularMarketVolume", 0));
         analysis.setValorMercado(fund.getOrDefault("Valor de mercado", 0.0));
         analysis.setValorFirma(fund.getOrDefault("Valor da firma", 0.0));
-
+        analysis.setLpa(round2(eps));
+        analysis.setVpa(round2(bookValue));
+        analysis.setRoa(round2(fund.getOrDefault("ROA", 0.0)));
+        analysis.setMargemEbitda(round2(fund.getOrDefault("Marg. EBITDA", 0.0)));
+        //setValuation
         analysis.setValuationRobusto(calcularValuationRobusto(
                 currentPrice, eps, bookValue, dividendYield,
                 peRatio, revenueGrowth, ebitda, analysis.getValorFirma(), netIncome
