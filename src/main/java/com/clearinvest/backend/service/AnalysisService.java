@@ -58,7 +58,7 @@ public class AnalysisService {
         double ebitda        = fund.getOrDefault("EBIT",              0.0);
         double netIncome     = fund.getOrDefault("Lucro Líquido",     0.0);
         double totalAssets   = fund.getOrDefault("Ativo",             0.0);
-        double totalEquity   = fund.getOrDefault("Patrim. Liq",       0.0);
+        double totalEquity = fund.getOrDefault("Patrim. Líq", 0.0);
         double currentAssets = fund.getOrDefault("Ativo Circulante",  0.0);
         double cash          = fund.getOrDefault("Disponibilidades",   0.0);
         double grossDebt     = fund.getOrDefault("Dív. Bruta",         0.0);
