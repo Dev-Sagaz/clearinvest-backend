@@ -43,6 +43,10 @@ public class StockAnalysis {
     private double totalEquity;
     private double debtToEquity;
     private double currentRatio;
+    private double currentAssets;
+    private double cash;
+    private double grossDebt;
+    private double netDebt;
 
     // DFC
     private double operatingCashFlow;

@@ -59,6 +59,10 @@ public class AnalysisService {
         double netIncome     = fund.getOrDefault("Lucro Líquido",     0.0);
         double totalAssets   = fund.getOrDefault("Ativo",             0.0);
         double totalEquity   = fund.getOrDefault("Patrim. Liq",       0.0);
+        double currentAssets = fund.getOrDefault("Ativo Circulante",  0.0);
+        double cash          = fund.getOrDefault("Disponibilidades",   0.0);
+        double grossDebt     = fund.getOrDefault("Dív. Bruta",         0.0);
+        double netDebt       = fund.getOrDefault("Dív. Líquida",       0.0);
         double psr           = fund.getOrDefault("PSR",               0.0);
         double ebitOnAssets  = fund.getOrDefault("EBIT / Ativo",      0.0);
         double bookValue     = fund.getOrDefault("VPA",               0.0);
@@ -118,6 +122,10 @@ public class AnalysisService {
         analysis.setTotalAssets(totalAssets);
         analysis.setTotalLiabilities(0);
         analysis.setTotalEquity(totalEquity);
+        analysis.setCurrentAssets(currentAssets);
+        analysis.setCash(cash);
+        analysis.setGrossDebt(grossDebt);
+        analysis.setNetDebt(netDebt);
         analysis.setDebtToEquity(round2(debtToEquity));
         analysis.setCurrentRatio(round2(currentRatio));
         analysis.setOperatingCashFlow(0);
