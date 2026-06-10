@@ -2,44 +2,44 @@ package com.clearinvest.backend.client;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.springframework.http.*;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 @Component
 public class CoinGeckoClient {
 
-    private final RestTemplate restTemplate = new RestTemplate();
-    private static final String BASE_URL = "https://api.coingecko.com/api/v3";
-
     public JSONObject getCoinData(String coinId) {
-        String url = BASE_URL + "/coins/" + coinId
-                + "?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false";
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("User-Agent", "Mozilla/5.0");
-        headers.set("Accept", "application/json");
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-        return new JSONObject(response.getBody());
+        JSONObject mock = new JSONObject();
+        mock.put("name", coinId);
+        mock.put("symbol", coinId);
+        mock.put("market_cap_rank", 1);
+        JSONObject marketData = new JSONObject();
+        JSONObject price = new JSONObject();
+        price.put("usd", 100000.0);
+        marketData.put("current_price", price);
+        marketData.put("price_change_percentage_24h", 2.5);
+        marketData.put("price_change_percentage_7d", 5.0);
+        marketData.put("price_change_percentage_30d", 10.0);
+        JSONObject marketCap = new JSONObject();
+        marketCap.put("usd", 2000000000000.0);
+        marketData.put("market_cap", marketCap);
+        JSONObject volume = new JSONObject();
+        volume.put("usd", 50000000000.0);
+        marketData.put("total_volume", volume);
+        JSONObject ath = new JSONObject();
+        ath.put("usd", 109000.0);
+        marketData.put("ath", ath);
+        marketData.put("ath_change_percentage_usd", -8.0);
+        marketData.put("circulating_supply", 19000000.0);
+        marketData.put("max_supply", 21000000.0);
+        mock.put("market_data", marketData);
+        return mock;
     }
 
     public JSONArray getOhlcData(String coinId, int days) {
-        String url = BASE_URL + "/coins/" + coinId + "/ohlc?vs_currency=usd&days=" + days;
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("User-Agent", "Mozilla/5.0");
-        headers.set("Accept", "application/json");
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-        return new JSONArray(response.getBody());
+        return new JSONArray();
     }
 
     public String searchCoin(String query) {
-        String url = BASE_URL + "/search?query=" + query;
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("User-Agent", "Mozilla/5.0");
-        headers.set("Accept", "application/json");
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-        return response.getBody();
+        return "{}";
     }
 }
