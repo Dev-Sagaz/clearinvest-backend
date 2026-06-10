@@ -67,6 +67,15 @@ public class AnalysisService {
         double ebitOnAssets  = fund.getOrDefault("EBIT / Ativo",      0.0);
         double bookValue     = fund.getOrDefault("VPA",               0.0);
         double eps           = fund.getOrDefault("LPA",               0.0);
+        double evEbitda     = fund.getOrDefault("EV / EBITDA",     0.0);
+        double pEbit        = fund.getOrDefault("P/EBIT",          0.0);
+        double pAtivos      = fund.getOrDefault("P/Ativos",        0.0);
+        double pCapGiro     = fund.getOrDefault("P/Cap. Giro",     0.0);
+        double pAtvCircLiq  = fund.getOrDefault("P/Ativ Circ Liq", 0.0);
+        double pegRatio     = (peRatio > 0 && revenueGrowth > 0) ? round2(peRatio / revenueGrowth) : 0.0;
+        double passivoAtivo = totalAssets > 0 ? round2((totalAssets - totalEquity) / totalAssets) : 0.0;
+        double plAtivo      = totalAssets > 0 ? round2(totalEquity / totalAssets) : 0.0;
+        double dividaLiqEbit = ebitda > 0 ? round2(netDebt / ebitda) : 0.0;
 
         double avg52w = (fiftyTwoWeekHigh > 0 && fiftyTwoWeekLow > 0)
                 ? round2((fiftyTwoWeekHigh + fiftyTwoWeekLow) / 2.0) : 0;
@@ -152,6 +161,15 @@ public class AnalysisService {
 
         analysis.setRoa(roa);
         analysis.setMargemEbitda(margemEbitda);
+        analysis.setEvEbitda(round2(evEbitda));
+        analysis.setPEbit(round2(pEbit));
+        analysis.setPAtivos(round2(pAtivos));
+        analysis.setPCapGiro(round2(pCapGiro));
+        analysis.setPAtvCircLiq(round2(pAtvCircLiq));
+        analysis.setPegRatio(pegRatio);
+        analysis.setPassivoAtivo(passivoAtivo);
+        analysis.setPlAtivo(plAtivo);
+        analysis.setDividaLiqEbit(dividaLiqEbit);
         //setValuation
         analysis.setValuationRobusto(calcularValuationRobusto(
                 currentPrice, eps, bookValue, dividendYield,

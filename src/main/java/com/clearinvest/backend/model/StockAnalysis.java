@@ -75,6 +75,13 @@ public class StockAnalysis {
     private double vpa;
     private double roa;
     private double margemEbitda;
+    private double evEbitda;
+    private double pegRatio;
+    private double pEbitda;
+    private double pAtvCircLiq;
+    private double passivoAtivo;
+    private double plAtivo;
+    private double dividaLiqEbit;
     // Valuation Robusto
     private ValuationResult valuationRobusto;
 }
