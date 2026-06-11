@@ -11,7 +11,7 @@ import org.springframework.web.client.RestTemplate;
 public class CoinGeckoClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String BASE_URL = "https://api.coingecko.com/api/v3";
+   private static final String BASE_URL = "https://api.coingecko.com/api/v3";
 
     public JSONObject getCoinData(String coinId) {
         String url = BASE_URL + "/coins/" + coinId
