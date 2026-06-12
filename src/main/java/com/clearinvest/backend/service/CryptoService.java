@@ -1,53 +1,70 @@
 package com.clearinvest.backend.service;
 
-import com.clearinvest.backend.client.CoinGeckoClient;
+import com.clearinvest.backend.client.BinanceClient;
 import com.clearinvest.backend.model.CryptoAnalysis;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 @Service
 public class CryptoService {
 
-    private final CoinGeckoClient coinGeckoClient;
+    private final BinanceClient binanceClient;
 
-    public CryptoService(CoinGeckoClient coinGeckoClient) {
-        this.coinGeckoClient = coinGeckoClient;
+    private final ConcurrentHashMap<String, CryptoAnalysis> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Long> cacheTime = new ConcurrentHashMap<>();
+    private static final long CACHE_TTL = 300_000;
+
+    public CryptoService(BinanceClient binanceClient) {
+        this.binanceClient = binanceClient;
     }
 
     public CryptoAnalysis analyze(String symbol) {
+        String cacheKey = symbol.toLowerCase();
+
         try {
-            String coinId = resolveCoinId(symbol);
-            JSONObject data = coinGeckoClient.getCoinData(coinId);
-            JSONObject marketData = data.optJSONObject("market_data");
+            if (cache.containsKey(cacheKey)) {
+                long age = System.currentTimeMillis() - cacheTime.get(cacheKey);
+                if (age < CACHE_TTL) return cache.get(cacheKey);
+            }
+
+            String binanceSymbol = resolveBinanceSymbol(symbol);
+
+            JSONObject ticker = binanceClient.getTicker24h(binanceSymbol);
 
             CryptoAnalysis analysis = new CryptoAnalysis();
-            analysis.setId(coinId);
-            analysis.setSymbol(data.optString("symbol", symbol).toUpperCase());
-            analysis.setName(data.optString("name", symbol));
-            analysis.setImage(data.optJSONObject("image") != null
-                    ? data.optJSONObject("image").optString("large", "") : "");
+            analysis.setId(binanceSymbol.toLowerCase());
+            analysis.setSymbol(binanceSymbol.toUpperCase());
+            analysis.setName(resolveName(symbol));
+            analysis.setImage("");
 
-            double price = getUsd(marketData, "current_price");
-            analysis.setCurrentPrice(price);
-            analysis.setPriceChange24h(getUsd(marketData, "price_change_24h"));
-            analysis.setPriceChangePercent24h(marketData != null ? marketData.optDouble("price_change_percentage_24h", 0) : 0);
-            analysis.setPriceChangePercent7d(marketData != null ? marketData.optDouble("price_change_percentage_7d", 0) : 0);
-            analysis.setPriceChangePercent30d(marketData != null ? marketData.optDouble("price_change_percentage_30d", 0) : 0);
-            analysis.setAth(getUsd(marketData, "ath"));
-            analysis.setAtl(getUsd(marketData, "atl"));
-            analysis.setAthChangePercent(marketData != null ? marketData.optDouble("ath_change_percentage", 0) : 0);
-            analysis.setMarketCap(getUsd(marketData, "market_cap"));
-            analysis.setMarketCapRank(data.optLong("market_cap_rank", 0));
-            analysis.setVolume24h(getUsd(marketData, "total_volume"));
-            analysis.setCirculatingSupply(marketData != null ? marketData.optDouble("circulating_supply", 0) : 0);
-            analysis.setTotalSupply(marketData != null ? marketData.optDouble("total_supply", 0) : 0);
-            analysis.setMaxSupply(marketData != null ? marketData.optDouble("max_supply", 0) : 0);
+            double price = Double.parseDouble(ticker.optString("lastPrice", "0"));
+            double priceChange24h = Double.parseDouble(ticker.optString("priceChange", "0"));
+            double priceChangePercent24h = Double.parseDouble(ticker.optString("priceChangePercent", "0"));
+            double high24h = Double.parseDouble(ticker.optString("highPrice", "0"));
+            double low24h = Double.parseDouble(ticker.optString("lowPrice", "0"));
+            double volume24h = Double.parseDouble(ticker.optString("quoteVolume", "0"));
+
+            analysis.setCurrentPrice(round2(price));
+            analysis.setPriceChange24h(round2(priceChange24h));
+            analysis.setPriceChangePercent24h(round2(priceChangePercent24h));
+            analysis.setPriceChangePercent7d(0);
+            analysis.setPriceChangePercent30d(0);
+            analysis.setAth(round2(high24h));
+            analysis.setAtl(round2(low24h));
+            analysis.setAthChangePercent(0);
+            analysis.setMarketCap(0);
+            analysis.setMarketCapRank(0);
+            analysis.setVolume24h(round2(volume24h));
+            analysis.setCirculatingSupply(0);
+            analysis.setTotalSupply(0);
+            analysis.setMaxSupply(0);
 
             try {
-                Thread.sleep(1500);
-                JSONArray ohlc = coinGeckoClient.getOhlcData(coinId, 200);
-                double[] closes = extractCloses(ohlc);
+                JSONArray klines = binanceClient.getKlines(binanceSymbol, "1d", 200);
+                double[] closes = extractClosesFromBinance(klines);
 
                 double rsi = calculateRSI(closes, 14);
                 analysis.setRsi14(round2(rsi));
@@ -81,21 +98,76 @@ public class CryptoService {
                         : price < bb[2] ? "Abaixo da banda" : "Dentro");
 
             } catch (Exception e) {
-    analysis.setSignal("Erro: " + e.getMessage());
-    analysis.setTrend("Lateral");
-    analysis.setMacdTrend("Neutro");
-    analysis.setBbSignal("Dentro");
-}
+                analysis.setSignal("Neutro");
+                analysis.setTrend("Lateral");
+                analysis.setMacdTrend("Neutro");
+                analysis.setBbSignal("Dentro");
+            }
 
             int score = calculateScore(analysis);
             analysis.setScore(score);
             analysis.setRecommendation(score >= 70 ? "Comprar" : score >= 50 ? "Neutro" : "Evitar");
 
+            cache.put(cacheKey, analysis);
+            cacheTime.put(cacheKey, System.currentTimeMillis());
+
             return analysis;
 
         } catch (Exception e) {
+            if (cache.containsKey(cacheKey)) return cache.get(cacheKey);
             throw new RuntimeException("Erro ao buscar cripto: " + e.getMessage());
         }
+    }
+
+    private double[] extractClosesFromBinance(JSONArray klines) {
+        double[] closes = new double[klines.length()];
+        for (int i = 0; i < klines.length(); i++) {
+            JSONArray candle = klines.getJSONArray(i);
+            closes[i] = Double.parseDouble(candle.getString(4));
+        }
+        return closes;
+    }
+
+    private String resolveBinanceSymbol(String symbol) {
+        return switch (symbol.toLowerCase()) {
+            case "btc", "bitcoin"    -> "BTC";
+            case "eth", "ethereum"   -> "ETH";
+            case "sol", "solana"     -> "SOL";
+            case "bnb"               -> "BNB";
+            case "xrp", "ripple"     -> "XRP";
+            case "ada", "cardano"    -> "ADA";
+            case "doge", "dogecoin"  -> "DOGE";
+            case "dot", "polkadot"   -> "DOT";
+            case "avax", "avalanche" -> "AVAX";
+            case "link", "chainlink" -> "LINK";
+            case "ltc", "litecoin"   -> "LTC";
+            case "matic", "polygon"  -> "MATIC";
+            case "near"              -> "NEAR";
+            case "sui"               -> "SUI";
+            case "pepe"              -> "PEPE";
+            default                  -> symbol.toUpperCase();
+        };
+    }
+
+    private String resolveName(String symbol) {
+        return switch (symbol.toLowerCase()) {
+            case "btc", "bitcoin"    -> "Bitcoin";
+            case "eth", "ethereum"   -> "Ethereum";
+            case "sol", "solana"     -> "Solana";
+            case "bnb"               -> "BNB";
+            case "xrp", "ripple"     -> "XRP";
+            case "ada", "cardano"    -> "Cardano";
+            case "doge", "dogecoin"  -> "Dogecoin";
+            case "dot", "polkadot"   -> "Polkadot";
+            case "avax", "avalanche" -> "Avalanche";
+            case "link", "chainlink" -> "Chainlink";
+            case "ltc", "litecoin"   -> "Litecoin";
+            case "matic", "polygon"  -> "Polygon";
+            case "near"              -> "NEAR";
+            case "sui"               -> "Sui";
+            case "pepe"              -> "Pepe";
+            default                  -> symbol.toUpperCase();
+        };
     }
 
     private double calculateRSI(double[] closes, int period) {
@@ -157,15 +229,6 @@ public class CryptoService {
         return new double[]{middle + mult * stdDev, middle, middle - mult * stdDev};
     }
 
-    private double[] extractCloses(JSONArray ohlc) {
-        double[] closes = new double[ohlc.length()];
-        for (int i = 0; i < ohlc.length(); i++) {
-            JSONArray candle = ohlc.getJSONArray(i);
-            closes[i] = candle.getDouble(4);
-        }
-        return closes;
-    }
-
     private int calculateScore(CryptoAnalysis a) {
         int score = 50;
         if (a.getRsi14() > 0 && a.getRsi14() < 30) score += 20;
@@ -182,34 +245,6 @@ public class CryptoService {
         if (a.getMarketCapRank() <= 10) score += 10;
         else if (a.getMarketCapRank() <= 50) score += 5;
         return Math.min(100, Math.max(0, score));
-    }
-
-    private String resolveCoinId(String symbol) {
-        return switch (symbol.toLowerCase()) {
-            case "btc", "bitcoin"    -> "bitcoin";
-            case "eth", "ethereum"   -> "ethereum";
-            case "sol", "solana"     -> "solana";
-            case "bnb"               -> "binancecoin";
-            case "xrp", "ripple"     -> "ripple";
-            case "ada", "cardano"    -> "cardano";
-            case "doge", "dogecoin"  -> "dogecoin";
-            case "dot", "polkadot"   -> "polkadot";
-            case "avax", "avalanche" -> "avalanche-2";
-            case "link", "chainlink" -> "chainlink";
-            case "ltc", "litecoin"   -> "litecoin";
-            case "matic", "polygon"  -> "POL";
-            case "near"              -> "near";
-            case "sui"               -> "sui";
-            case "pepe"              -> "pepe";
-            default                  -> symbol.toLowerCase();
-        };
-    }
-
-    private double getUsd(JSONObject obj, String key) {
-        if (obj == null) return 0;
-        JSONObject inner = obj.optJSONObject(key);
-        if (inner != null) return inner.optDouble("usd", 0);
-        return obj.optDouble(key, 0);
     }
 
     private double round2(double v) {
