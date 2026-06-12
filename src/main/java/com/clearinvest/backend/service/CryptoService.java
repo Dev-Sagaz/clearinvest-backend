@@ -81,11 +81,11 @@ public class CryptoService {
                         : price < bb[2] ? "Abaixo da banda" : "Dentro");
 
             } catch (Exception e) {
-                analysis.setSignal("Neutro");
-                analysis.setTrend("Lateral");
-                analysis.setMacdTrend("Neutro");
-                analysis.setBbSignal("Dentro");
-            }
+    analysis.setSignal("Erro: " + e.getMessage());
+    analysis.setTrend("Lateral");
+    analysis.setMacdTrend("Neutro");
+    analysis.setBbSignal("Dentro");
+}
 
             int score = calculateScore(analysis);
             analysis.setScore(score);
@@ -197,7 +197,7 @@ public class CryptoService {
             case "avax", "avalanche" -> "avalanche-2";
             case "link", "chainlink" -> "chainlink";
             case "ltc", "litecoin"   -> "litecoin";
-            case "matic", "polygon"  -> "matic-network";
+            case "matic", "polygon"  -> "POL";
             case "near"              -> "near";
             case "sui"               -> "sui";
             case "pepe"              -> "pepe";
