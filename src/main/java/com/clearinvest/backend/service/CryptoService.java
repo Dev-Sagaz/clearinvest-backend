@@ -103,6 +103,28 @@ public class CryptoService {
                 analysis.setMacdTrend("Neutro");
                 analysis.setBbSignal("Dentro");
             }
+            // Variação 7d
+try {
+    JSONArray klines7d = binanceClient.getKlines(binanceSymbol, "1d", 8);
+    if (klines7d.length() >= 8) {
+        double price7dAgo = Double.parseDouble(klines7d.getJSONArray(0).getString(4));
+        double var7d = ((price - price7dAgo) / price7dAgo) * 100;
+        analysis.setPriceChangePercent7d(round2(var7d));
+    }
+} catch (Exception ignored) {}
+
+// Variação 30d
+try {
+    JSONArray klines30d = binanceClient.getKlines(binanceSymbol, "1d", 31);
+    if (klines30d.length() >= 31) {
+        double price30dAgo = Double.parseDouble(klines30d.getJSONArray(0).getString(4));
+        double var30d = ((price - price30dAgo) / price30dAgo) * 100;
+        analysis.setPriceChangePercent30d(round2(var30d));
+    }
+} catch (Exception ignored) {}
+
+// Market Cap via CoinGecko
+enrichWithCoinGecko(analysis, resolveCoinGeckoId(symbol));
 
             int score = calculateScore(analysis);
             analysis.setScore(score);
