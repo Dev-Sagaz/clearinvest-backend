@@ -10,7 +10,7 @@ import org.springframework.web.client.RestTemplate;
 public class BinanceClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String BASE_URL = "https://api.binance.com/api/v3";
+    private static final String BASE_URL = "https://api.binance.us/api/v3";
 
     public JSONArray getKlines(String symbol, String interval, int limit) {
         String pair = symbol.toUpperCase() + "USDT";
