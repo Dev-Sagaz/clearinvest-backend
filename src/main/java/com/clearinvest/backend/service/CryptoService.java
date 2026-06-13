@@ -169,6 +169,24 @@ public class CryptoService {
             default                  -> symbol.toUpperCase();
         };
     }
+    private String resolveCoinGeckoId(String symbol) {
+    return switch (symbol.toLowerCase()) {
+        case "btc", "bitcoin"    -> "bitcoin";
+        case "eth", "ethereum"   -> "ethereum";
+        case "sol", "solana"     -> "solana";
+        case "bnb"               -> "binancecoin";
+        case "xrp", "ripple"     -> "ripple";
+        case "ada", "cardano"    -> "cardano";
+        case "doge", "dogecoin"  -> "dogecoin";
+        case "avax", "avalanche" -> "avalanche-2";
+        case "link", "chainlink" -> "chainlink";
+        case "ltc", "litecoin"   -> "litecoin";
+        case "near"              -> "near";
+        case "sui"               -> "sui";
+        case "pepe"              -> "pepe";
+        default                  -> symbol.toLowerCase();
+    };
+}
 
     private double calculateRSI(double[] closes, int period) {
         if (closes.length < period + 1) return 50;
