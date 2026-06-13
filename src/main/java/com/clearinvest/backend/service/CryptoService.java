@@ -250,4 +250,16 @@ public class CryptoService {
     private double round2(double v) {
         return Math.round(v * 100.0) / 100.0;
     }
+    private void enrichWithCoinGecko(CryptoAnalysis analysis, String coinGeckoId) {
+    try {
+        String url = "https://api.coingecko.com/api/v3/simple/price?ids=" + coinGeckoId 
+            + "&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true";
+        org.springframework.web.client.RestTemplate rt = new org.springframework.web.client.RestTemplate();
+        String body = rt.getForObject(url, String.class);
+        JSONObject json = new JSONObject(body).optJSONObject(coinGeckoId);
+        if (json != null) {
+            analysis.setMarketCap(json.optDouble("usd_market_cap", 0));
+        }
+    } catch (Exception ignored) {}
+}
 }
